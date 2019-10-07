@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{2B111281-59D8-44C6-939E-65FA0F09C3B7}</ProjectGuid>
+    <ProjectGuid>{276061EF-202D-4750-B7BF-52EA5FA55ED9}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>AccountPlugin</RootNamespace>
-    <AssemblyName>AccountPlugin</AssemblyName>
+    <RootNamespace>LBPlugin</RootNamespace>
+    <AssemblyName>LBPlugin</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -31,6 +31,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Windows.Forms" />
@@ -46,9 +48,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PluginContracts\PluginContracts.csproj">
+    <ProjectReference Include="..\..\PluginContracts\PluginContracts.csproj">
       <Project>{521929dc-7cad-4cee-bc99-f3a41e5e397c}</Project>
       <Name>PluginContracts</Name>
+      <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

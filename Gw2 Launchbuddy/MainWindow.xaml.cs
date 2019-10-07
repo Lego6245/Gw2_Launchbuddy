@@ -1,26 +1,21 @@
 ﻿using Gw2_Launchbuddy.ObjectManagers;
-using IWshRuntimeLibrary;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.NetworkInformation;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
-using System.Xml;
 using Gw2_Launchbuddy.Modifiers;
+using System.Windows.Navigation;
 
 namespace Gw2_Launchbuddy
 {
@@ -42,7 +37,6 @@ namespace Gw2_Launchbuddy
 
         private bool cinemamode = false;
         private bool slideshowthread_isrunning = false;
-
         private int reso_x, reso_y;
         
         public class CinemaImage
@@ -66,6 +60,8 @@ namespace Gw2_Launchbuddy
             try
             {
                 InitializeComponent();
+                //Reference this as Mainwin for external use
+                EnviromentManager.MainWin = this;
             }
             catch
             {
@@ -99,6 +95,9 @@ namespace Gw2_Launchbuddy
             Properties.Settings.Default.counter_launches = 1;
 #endif
 
+
+            EnviromentManager.AfterUI_Inits();
+
             //Setup
             DonatePopup();
             UIInit();
@@ -107,8 +106,6 @@ namespace Gw2_Launchbuddy
             checkver.IsBackground = true;
             checkver.Start();*/
 
-            //Reference this as Mainwin for external use
-            EnviromentManager.MainWin = this;
             LoadEnviromentUI();
 
             cinema_setup();
@@ -124,6 +121,7 @@ namespace Gw2_Launchbuddy
                 Thread checklbver = new Thread(checklbversion);
                 checklbver.Start();
             }
+
         }
 
         private void LoadEnviromentUI()
@@ -630,10 +628,7 @@ namespace Gw2_Launchbuddy
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            Properties.Settings.Default.instance_win_X = EnviromentManager.LBInstanceGUI.Left;
-            Properties.Settings.Default.instance_win_Y = EnviromentManager.LBInstanceGUI.Top;
             Properties.Settings.Default.Save();
-            AccountManager.SaveAccounts();
             Environment.Exit(Environment.ExitCode);
         }
 
@@ -707,8 +702,8 @@ namespace Gw2_Launchbuddy
         private void bt_close_Click(object sender, RoutedEventArgs e)
         {
             Mainwin_SaveSetup();
-            EnviromentManager.Close();
             Properties.Settings.Default.Save();
+            EnviromentManager.Close();
             Application.Current.Shutdown();
         }
         private void bt_minimize_Click(object sender, RoutedEventArgs e)
@@ -1286,6 +1281,13 @@ namespace Gw2_Launchbuddy
             {
                 acc.IsEnabled = true;
             }
+            if(accs.Count>0)
+            {
+                lb_acccountinfo.Content = $"Accounts ({accs.Count} selected):";
+            }else
+            {
+                lb_acccountinfo.Content = "Accounts:";
+            }
         }
 
         private void lv_accssettings_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1611,13 +1613,32 @@ namespace Gw2_Launchbuddy
             endpos.Value = sl_logoendpos.Value * (reso_x / 200);
         }
 
+
+        private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+
+        {
+
+            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri));
+
+            e.Handled = true;
+
+        }
+
         #region Plugins
 
-        public void AddTabPlugin(PluginContracts.LBPlugin plugin)
+        public void AddTabPlugin(PluginContracts.ILBPlugin plugin)
         {
             if(plugin.UIContent !=null)
             {
                 tab_options.Items.Add(plugin.UIContent);
+            }
+        }
+
+        public void RemTabPlugin(PluginContracts.ILBPlugin plugin)
+        {
+            if (plugin.UIContent != null)
+            {
+                tab_options.Items.Remove(plugin.UIContent);
             }
         }
 
@@ -1633,12 +1654,18 @@ namespace Gw2_Launchbuddy
 
         private void bt_remplugin_Click(object sender, RoutedEventArgs e)
         {
-            
+            PluginManager.RemovePlugin(((sender as Button).DataContext as Plugin_Wrapper).Plugin);
         }
 
-        private void RemPlugin(PluginContracts.IPlugin plugin)
+        private void cb_autoupdateplugins_Click(object sender, RoutedEventArgs e)
         {
-            PluginManager.RemovePlugin(plugin.PluginInfo);
+            Properties.Settings.Default.Save();
+        }
+
+        private void bt_updateplugin_Click(object sender, RoutedEventArgs e)
+        {
+            PluginManager.UpdatePlugin(((sender as Button).DataContext as Plugin_Wrapper).Plugin,true);
+           
         }
 
 

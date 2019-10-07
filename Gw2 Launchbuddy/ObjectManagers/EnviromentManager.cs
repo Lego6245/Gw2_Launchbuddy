@@ -19,7 +19,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
 
     public static class EnviromentManager
     {
-        public static Version LBVersion = new Version("1.9.3");
+        public static Version LBVersion = new Version("2.0.0");
         public static LaunchOptions LaunchOptions;
 
         public static string LBAppdataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\Gw2 Launchbuddy\";
@@ -45,6 +45,8 @@ namespace Gw2_Launchbuddy.ObjectManagers
 
         public static string GwLocaldatPath = GwAppdataPath + "Local.dat";
         public static string GwLocaldatBakPath = GwAppdataPath + "Local.dat.bak";
+
+        public static string GwCacheFoldersPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\Temp\";
 
         public static string LBLocaldatsPath = LBAppdataPath +"Loginfiles\\";
 
@@ -80,6 +82,13 @@ namespace Gw2_Launchbuddy.ObjectManagers
 
             Hotkeys.RegisterAll();
 
+            //Cleanup Plugin folder
+            PluginManager.RemoveUninstalledPlugins();
+            PluginManager.AddToInstallPlugins();
+
+            //Cleanup CacheFolder
+            CacheCleaner.Clean();
+
         }
 
         public static void AfterUI_Inits()
@@ -87,17 +96,31 @@ namespace Gw2_Launchbuddy.ObjectManagers
             UpdateAccounts();
             PluginManager.LoadPlugins();
             PluginManager.InitPlugins();
+            PluginManager.AutoUpdatePlugins();
             PluginManager.OnLBStart(null);
         }
 
         public static void Close()
         {
             AddOnManager.SaveAddons(LBAddonPath);
+            AccountManager.SaveAccounts();
             Hotkeys.UnregisterAll();
             //Local Dat Cleanup
             LocalDatManager.CleanUp();
 
             PluginManager.OnLBClose(null);
+        }
+
+        public static void Reboot()
+        {
+            ProcessStartInfo Info = new ProcessStartInfo();
+            Info.Arguments = "/C ping 127.0.0.1 -n 2 && \"" + System.Reflection.Assembly.GetEntryAssembly().Location + "\"";
+            Info.WindowStyle = ProcessWindowStyle.Hidden;
+            Info.CreateNoWindow = true;
+            Info.FileName = "cmd.exe";
+            Close();
+            Process.Start(Info);
+            Application.Current.MainWindow.Close();
         }
 
         private static void UpdateAccounts()
@@ -220,7 +243,10 @@ namespace Gw2_Launchbuddy.ObjectManagers
                 Process pro = new Process();
                 pro.StartInfo = new ProcessStartInfo { FileName=EnviromentManager.GwClientExePath, Arguments = "-image" };
                 pro.Start();
-                pro.WaitForExit();
+                Modifiers.ModuleReader.WaitForModule("WINNSI.dll",pro);
+                Thread.Sleep(3000); //Buffer to not land between launcher update/ game update
+                Action waitforlaunch = () => pro.WaitForExit();
+                Helpers.BlockerInfo.Run("Game Update", "Launchbuddy waits for your game to be updated", waitforlaunch);
                 EnviromentManager.GwClientVersion = Api.ClientBuild;
             }
             else
@@ -234,6 +260,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
             if (EnviromentManager.LBUseClientGUI)
             {
                 if (LBInstanceGUI.IsLoaded == false) LBInstanceGUI = new GUI_ApplicationManager();
+                if (LBInstanceGUI.WindowState == WindowState.Minimized) LBInstanceGUI.WindowState = WindowState.Normal;
                 LBInstanceGUI.Show();
             }
         }
