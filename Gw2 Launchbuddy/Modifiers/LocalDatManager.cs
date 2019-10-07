@@ -42,14 +42,15 @@ namespace Gw2_Launchbuddy.Modifiers
         private enum SymbolicLink
         {
             File = 0x0,
-            Directory = 0x1
+            Directory = 0x1,
+            AllowUnprivileged = 0x2
         }
 
         private static void CreateSymbolLink(string sourcefile)
         {
             if (File.Exists(sourcefile) && !File.Exists(EnviromentManager.GwLocaldatPath))
             {
-                if (!CreateSymbolicLink( EnviromentManager.GwLocaldatPath, sourcefile, 0x0))
+                if (!CreateSymbolicLink( EnviromentManager.GwLocaldatPath, sourcefile, SymbolicLink.AllowUnprivileged))
                 {
                     throw new Exception("Could not create Symbolic link. Not running as Admin?");
                 }
