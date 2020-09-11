@@ -1,5 +1,4 @@
-﻿using Gw2_Launchbuddy.Interfaces;
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
@@ -34,6 +33,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
         {
             Client client = sender as Client;
             Console.WriteLine(client.account.Nickname + " status changed to: " + client.Status + " = " + ((int)client.Status).ToString());
+
             if (ActiveClients.Contains(client) && client.Status < ActiveStatus_Threshold)
             {
                 Application.Current.Dispatcher.BeginInvoke(
@@ -109,7 +109,16 @@ namespace Gw2_Launchbuddy.ObjectManagers
                     }
                     if (pro != null)
                     {
-                        if (pro.StartTime.ToString() == line.Split(',')[3])
+                        String processStartTime;
+                        try
+                        {
+                            processStartTime = pro.StartTime.ToString();
+                        }
+                        catch
+                        {
+                            continue;
+                        }
+                        if (processStartTime == line.Split(',')[3])
                         {
                             Client.ClientStatus status = (Client.ClientStatus)Int32.Parse(line.Split(',')[1]);
                             acc.Client.SetProcess(pro,status);
@@ -146,6 +155,8 @@ namespace Gw2_Launchbuddy.ObjectManagers
 #if DEBUG
             Console.WriteLine("Account: " + account + " Status: " + Status);
 #endif
+            PluginManager.OnClientStatusChanged(new PluginContracts.EventArguments.ClientStatusEventArgs(account.ID,(PluginContracts.ObjectInterfaces.ClientStatus)Status)); //Plugincall
+
             EventHandler handler = StatusChanged;
             if (handler != null)
             {
@@ -327,6 +338,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
                 Account.Settings.RelaunchesLeft--;
                 Launch();
             }
+            account.Settings.AccountInformation.SetLastClose();
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -356,7 +368,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
             Window_Scale(config.Win_Width,config.Win_Height);
         }
 
-        private void Window_Move(int posx,int posy)
+        public void Window_Move(int posx,int posy)
         {
             if (ProcessIsClosed()) return;
             Process.Refresh();
@@ -366,7 +378,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
                 MoveWindow(handle, posx, posy, Rect.right - Rect.left,Rect.bottom-Rect.top,true);
         }
 
-        private void Window_Scale(int width,int height)
+        public void Window_Scale(int width,int height)
         {
             if (ProcessIsClosed()) return;
             Process.Refresh();
@@ -419,7 +431,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
                 args += arg.ToString() + " ";
             }
             args += "-shareArchive ";
-
+            if(ClientManager.ActiveClients.Count!=0)args += $"-mumble GW2MumbleLink{account.ID} ";
 
 
             if (account.Settings.WinConfig != null && !args.Contains("-windowed")) args += "-windowed ";
@@ -443,17 +455,21 @@ namespace Gw2_Launchbuddy.ObjectManagers
             //Add Server Options
             if (ServerManager.SelectedAssetserver != null)
                 if(ServerManager.SelectedAssetserver.Enabled)
-                args += "-assetserver " + ServerManager.SelectedAssetserver.ToArgument;
+                args += "-assetsrv " + ServerManager.SelectedAssetserver.ToArgument;
             if (ServerManager.SelectedAuthserver != null)
                 if (ServerManager.SelectedAuthserver.Enabled)
-                    args += "-authserver " + ServerManager.SelectedAuthserver.ToArgument;
+                    args += "-authsrv " + ServerManager.SelectedAuthserver.ToArgument;
+            if(ServerManager.clientport!=null)
+            {
+                args += "-clientport " + ServerManager.clientport;
+            }
 
             Process.StartInfo = new ProcessStartInfo { FileName = EnviromentManager.GwClientExePath, Arguments=args };
         }
 
         private void SetProcessPriority()
         {
-            if (Account.Settings.ProcessPriority != null)
+            if (Account.Settings.ProcessPriority != ProcessPriorityClass.Normal)
             {
                 try
                 {
@@ -516,6 +532,11 @@ namespace Gw2_Launchbuddy.ObjectManagers
             {
                 DllInjector.Inject((uint)Process.Id,dll);
             }
+        }
+
+        public void Inject(string dllname)
+        {
+            DllInjector.Inject((uint)Process.Id, dllname);
         }
 
         private bool ProcessExists()
@@ -614,6 +635,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
                             Status = ClientStatus.Running;
                             try { Focus(); } catch { }
                             try {if(account.Settings.WinConfig!=null)new Thread(Window_Init).Start();} catch { }
+                            account.Settings.AccountInformation.SetLastLogin();
                             break;
                     }
                 }

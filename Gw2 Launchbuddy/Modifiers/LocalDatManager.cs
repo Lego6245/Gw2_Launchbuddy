@@ -70,7 +70,7 @@ namespace Gw2_Launchbuddy.Modifiers
         public static void CleanUp()
         {
             ObservableCollection<LocalDatFile> tmp_datfiles = new ObservableCollection<LocalDatFile>();
-            foreach(Account acc in AccountManager.Accounts)
+            foreach (Account acc in AccountManager.Accounts)
             {
                 tmp_datfiles.Add(acc.Settings.Loginfile);
             }
@@ -151,6 +151,8 @@ namespace Gw2_Launchbuddy.Modifiers
                     Process pro = new Process { StartInfo = new ProcessStartInfo { FileName = EnviromentManager.GwClientExePath } };
                     pro.Start();
                     pro.WaitForInputIdle();
+                    Thread.Sleep(500);
+                    pro.Refresh();
                     Action waitforlaunch = () => ModuleReader.WaitForModule("WINNSI.DLL", pro);
                     Helpers.BlockerInfo.Run("Loginfile Update", "Launchbuddy is updating an outdated Loginfile", waitforlaunch);
                     pro.Kill();
@@ -160,9 +162,9 @@ namespace Gw2_Launchbuddy.Modifiers
                     file.gw2build = Api.ClientBuild;
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                throw new Exception("An error occured when Updating the Login file. " +e.Message);
+                throw new Exception("An error occured when Updating the Login file. " + e.Message);
             }
         }
 
@@ -171,7 +173,7 @@ namespace Gw2_Launchbuddy.Modifiers
             FileStream stream = null;
             try
             {
-                stream = File.Open(file.Path,FileMode.Open, FileAccess.Read, FileShare.None);
+                stream = File.Open(file.Path, FileMode.Open, FileAccess.Read, FileShare.None);
             }
             catch (IOException)
             {
@@ -188,14 +190,14 @@ namespace Gw2_Launchbuddy.Modifiers
         private static void WaitForLoginfileRelease(LocalDatFile file)
         {
             int i = 0;
-            while (LoginFileIsLocked(file)&& i < 5)
+            while (LoginFileIsLocked(file) && i < 5)
             {
                 i++;
                 Thread.Sleep(1000);
             }
         }
 
-        public static LocalDatFile CreateNewFileAutomated(string filename,string email,string passwd)
+        public static LocalDatFile CreateNewFileAutomated(string filename, string email, string passwd)
         {
             LocalDatFile datfile = new LocalDatFile();
 
@@ -205,11 +207,13 @@ namespace Gw2_Launchbuddy.Modifiers
 
             Process pro = new Process { StartInfo = new ProcessStartInfo(EnviromentManager.GwClientExePath) };
             pro.Start();
+            Thread.Sleep(500);
+            pro.Refresh();
             Action blockefunc = () => ModuleReader.WaitForModule("WINNSI.DLL", pro, null);
             Helpers.BlockerInfo.Run("Loginfile Creation", "LB is recreating your loginfile", blockefunc);
             if (!Helpers.BlockerInfo.Done) MessageBox.Show("No Clean Login. Loginfile might be not set correctly! Proceed with caution.");
             Thread.Sleep(100);
-            Loginfiller.Login(email,passwd,pro,true);
+            Loginfiller.Login(email, passwd, pro, true);
             Thread.Sleep(250);
 
             blockefunc = () => ModuleReader.WaitForModule("DPAPI.dll", pro, null);
@@ -262,11 +266,13 @@ namespace Gw2_Launchbuddy.Modifiers
 
             Process pro = new Process { StartInfo = new ProcessStartInfo(EnviromentManager.GwClientExePath) };
             pro.Start();
-            Action blockefunc = () => ModuleReader.WaitForModule("DPAPI.dll", pro,null);
-            Helpers.BlockerInfo.Run("Loginfile Creation","Please check remember email/password and press the login and play button. This window will be closed automatically on success.", blockefunc);
+            Thread.Sleep(250);
+            pro.Refresh();
+            Action blockefunc = () => ModuleReader.WaitForModule("DPAPI.dll", pro, null);
+            Helpers.BlockerInfo.Run("Loginfile Creation", "Please check remember email/password and press the login and play button. This window will be closed automatically on success.", blockefunc);
             if (!Helpers.BlockerInfo.Done) MessageBox.Show("No Clean Login. Loginfile might be not set correctly! Proceed with caution.");
             Thread.Sleep(100);
-          
+
             int ct = 0;
             bool exists = true;
             while (exists && ct < 100)
@@ -314,16 +320,17 @@ namespace Gw2_Launchbuddy.Modifiers
         public string Name { get { return System.IO.Path.GetFileNameWithoutExtension(Path); } }
         public string Gw2Build { get { return gw2build; } }
         public bool IsUpToDate { get { return Gw2Build == EnviromentManager.GwClientVersion; } }
-        public bool IsOutdated { get { return !IsUpToDate; } }
+        public bool IsOutdated { get { return !(IsUpToDate) & Valid; } }
         public bool Valid = false;
-        public string MD5HASH {  get { return CalculateMD5(Path); } }
+        public string MD5HASH { get { return CalculateMD5(Path); } }
 
         ~LocalDatFile()
         {
             try
             {
                 LocalDatManager.DataCollection.Remove(this);
-            }catch
+            }
+            catch
             {
 #if DEBUG
                 Console.WriteLine("Tried to remove non registered Local.dat File");
