@@ -28,14 +28,13 @@ namespace PluginContracts
     public interface ILBPlugin : IPlugin
     {
         TabItem UIContent { get; }
-
         ObservableCollection<IAcc> Accounts { get; set; }
-        IEnviroment Enviroment { get; set; }
+        IEnvironment Environment { get; set; }
 
         void OnLBStart(object sender, System.EventArgs e);
         void OnLBClose(object sender, System.EventArgs e);
 
-        void OnClientStatusChanged(object sender, ClientStatusEventArgs e); //NEED CHANGE
+        void OnClientStatusChanged(object sender, ClientStatusEventArgs e);
     }
 
 }

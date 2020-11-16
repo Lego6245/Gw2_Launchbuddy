@@ -338,6 +338,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
                 Account.Settings.RelaunchesLeft--;
                 Launch();
             }
+            account.Settings.AccountInformation.SetLastClose();
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -430,7 +431,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
                 args += arg.ToString() + " ";
             }
             args += "-shareArchive ";
-
+            if(ClientManager.ActiveClients.Count!=0)args += $"-mumble GW2MumbleLink{account.ID} ";
 
 
             if (account.Settings.WinConfig != null && !args.Contains("-windowed")) args += "-windowed ";
@@ -454,17 +455,21 @@ namespace Gw2_Launchbuddy.ObjectManagers
             //Add Server Options
             if (ServerManager.SelectedAssetserver != null)
                 if(ServerManager.SelectedAssetserver.Enabled)
-                args += "-assetserver " + ServerManager.SelectedAssetserver.ToArgument;
+                args += "-assetsrv " + ServerManager.SelectedAssetserver.ToArgument;
             if (ServerManager.SelectedAuthserver != null)
                 if (ServerManager.SelectedAuthserver.Enabled)
-                    args += "-authserver " + ServerManager.SelectedAuthserver.ToArgument;
+                    args += "-authsrv " + ServerManager.SelectedAuthserver.ToArgument;
+            if(ServerManager.clientport!=null)
+            {
+                args += "-clientport " + ServerManager.clientport;
+            }
 
             Process.StartInfo = new ProcessStartInfo { FileName = EnviromentManager.GwClientExePath, Arguments=args };
         }
 
         private void SetProcessPriority()
         {
-            if (Account.Settings.ProcessPriority != null)
+            if (Account.Settings.ProcessPriority != ProcessPriorityClass.Normal)
             {
                 try
                 {
@@ -630,6 +635,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
                             Status = ClientStatus.Running;
                             try { Focus(); } catch { }
                             try {if(account.Settings.WinConfig!=null)new Thread(Window_Init).Start();} catch { }
+                            account.Settings.AccountInformation.SetLastLogin();
                             break;
                     }
                 }

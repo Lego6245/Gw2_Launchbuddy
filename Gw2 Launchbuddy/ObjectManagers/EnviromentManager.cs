@@ -9,9 +9,10 @@ using System.Windows;
 using System.Xml;
 using System.Net;
 using System.Reflection;
-using CommandLine;
+//using CommandLine;
 using Gw2_Launchbuddy.Modifiers;
 using System.Threading;
+using CommandLine;
 
 namespace Gw2_Launchbuddy.ObjectManagers
 {
@@ -19,19 +20,33 @@ namespace Gw2_Launchbuddy.ObjectManagers
 
     public static class EnviromentManager
     {
-        public static Version LBVersion = new Version("2.0.0");
+        public static Version LBVersion = new Version("2.3.0");
         public static LaunchOptions LaunchOptions;
 
         public static string LBAppdataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\Gw2 Launchbuddy\";
         public static string LBActiveClientsPath = LBAppdataPath + "lbac.txt";
         public static string LBIconsPath = LBAppdataPath + "Icons\\";
         public static string LBAccPath = LBAppdataPath + "Accs.xml";
+        public static string LBConfigPath = LBAppdataPath + "LBConfig.xml";
         public static string LBPluginsPath = LBAppdataPath + "Plugins\\";
+        private static string LBRightTestPath = LBAppdataPath + "RightTest.txt";
 
-        public static bool LBUseClientGUI = Properties.Settings.Default.useinstancegui;
-        public static bool LBUseLoadingGUI = Properties.Settings.Default.useloadingui;
+        //public static bool LBUseClientGUI = LBConfiguration.Config.useinstancegui;
+        //public static bool LBUseLoadingGUI = Properties.Settings.Default.useloadingui;
 
-        public static GUI_ApplicationManager LBInstanceGUI = new GUI_ApplicationManager();
+        private static GUI_ApplicationManager lbInstanceGUI;
+
+        public static GUI_ApplicationManager LBInstanceGUI
+        {
+            get {
+                if(lbInstanceGUI==null)
+                {
+                    lbInstanceGUI= new GUI_ApplicationManager();
+                }
+                return lbInstanceGUI;
+            }
+            set { lbInstanceGUI = value; }
+        }
         public static LoadingScreen LBLoadingGUI = new LoadingScreen();
 
         public static string GwAppdataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\Guild Wars 2\";
@@ -60,10 +75,16 @@ namespace Gw2_Launchbuddy.ObjectManagers
 
         public static void Init()
         {
+            //LBInstanceGUI = new GUI_ApplicationManager();
+
             //Path Setup
             DirectorySetup();
+            LoadLBConfig();
             LoadGwClientInfo();
             CheckGwClientVersion();
+
+            //Rights Check :P
+            CheckApplicationRights();
 
             //Updater Network Protocol
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -94,10 +115,16 @@ namespace Gw2_Launchbuddy.ObjectManagers
         public static void AfterUI_Inits()
         {
             UpdateAccounts();
+            if (LBConfiguration.Config.autoupdatedatfiles)
+            {
+                UpdateAccounts();
+            }
             PluginManager.LoadPlugins();
             PluginManager.InitPlugins();
             PluginManager.AutoUpdatePlugins();
             PluginManager.OnLBStart(null);
+
+            LBTacO.Init();
         }
 
         public static void Close()
@@ -128,6 +155,48 @@ namespace Gw2_Launchbuddy.ObjectManagers
             AccountManager.UpdateAccountFiles();
         }
 
+        public static void CheckApplicationRights()
+        {
+            /*
+            if (File.Exists(LBRightTestPath)) File.Delete(LBRightTestPath);
+            File.WriteAllText(LBRightTestPath," ");
+            if(System.Environment.OSVersion.Version.Major >=10)
+            {
+                if (!Gw2_Launchbuddy.Modifiers.LocalDatManager.CreateSymbolicLink(LBAppdataPath + "LinkTest", LBRightTestPath, LocalDatManager.SymbolicLink.Unprivileged | LocalDatManager.SymbolicLink.File))
+                {
+                    System.Diagnostics.Process.Start("ms-settings:developers");
+                    System.Diagnostics.Process.Start("https://docs.microsoft.com/en-us/windows/uwp/get-started/enable-your-device-for-development");
+                    File.Delete(LBRightTestPath);
+                    MessageBox.Show("Launchbuddy requires additional rights to work properly. Please run Launchbuddy as Admin OR activate Windows Developer Mode!");
+                }
+            }else
+            {
+                if (!Gw2_Launchbuddy.Modifiers.LocalDatManager.CreateSymbolicLink(LBAppdataPath + "LinkTest", LBRightTestPath, LocalDatManager.SymbolicLink.File))
+                {
+                    File.Delete(LBRightTestPath);
+                    MessageBox.Show("Launchbuddy requires additional rights to work properly. Please run Launchbuddy as Admin!");
+                }
+
+            }
+
+            try
+            {
+                File.Delete(LBAppdataPath + "LinkTest");
+                File.Delete(LBRightTestPath);
+            }
+            catch
+            {
+
+            }
+            */
+
+        }
+
+        private static void LoadLBConfig()
+        {
+            LBConfiguration.Load();
+        }
+
         private static void DirectorySetup()
         {
             if (!Directory.Exists(LBAppdataPath)) Directory.CreateDirectory(LBAppdataPath);
@@ -145,6 +214,12 @@ namespace Gw2_Launchbuddy.ObjectManagers
                     }
                 }
             }
+        }
+
+        public static void ResetPropertySettings()
+        {
+            LBConfiguration.Reset();
+            LBConfiguration.Save();
         }
 
 
@@ -243,9 +318,11 @@ namespace Gw2_Launchbuddy.ObjectManagers
                 Process pro = new Process();
                 pro.StartInfo = new ProcessStartInfo { FileName=EnviromentManager.GwClientExePath, Arguments = "-image" };
                 pro.Start();
+                Thread.Sleep(1000);
+                pro.Refresh();
                 Modifiers.ModuleReader.WaitForModule("WINNSI.dll",pro);
                 Thread.Sleep(3000); //Buffer to not land between launcher update/ game update
-                Action waitforlaunch = () => pro.WaitForExit();
+                Action waitforlaunch = () => { while (!pro.HasExited) { } } ;
                 Helpers.BlockerInfo.Run("Game Update", "Launchbuddy waits for your game to be updated", waitforlaunch);
                 EnviromentManager.GwClientVersion = Api.ClientBuild;
             }
@@ -257,7 +334,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
 
         public static void Show_LBInstanceGUI()
         {
-            if (EnviromentManager.LBUseClientGUI)
+            if (LBConfiguration.Config.useinstancegui)
             {
                 if (LBInstanceGUI.IsLoaded == false) LBInstanceGUI = new GUI_ApplicationManager();
                 if (LBInstanceGUI.WindowState == WindowState.Minimized) LBInstanceGUI.WindowState = WindowState.Normal;
@@ -265,7 +342,8 @@ namespace Gw2_Launchbuddy.ObjectManagers
             }
         }
     }
-
+    
+    
     public class LaunchOptions
     {
         [Option('q', "silent", HelpText = "Run Launchbuddy silently.")]
@@ -289,6 +367,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
         [Option("delaymutex", HelpText = "Delay in milliseconds between mutex close attempts. Higher values increase the time between retries. (Up to 9 retries will be attempted)", Hidden = true)]
         public int? Delay { get; set; }
     }
+    
 
     #region Plugin
 

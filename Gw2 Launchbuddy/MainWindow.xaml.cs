@@ -65,7 +65,7 @@ namespace Gw2_Launchbuddy
             }
             catch
             {
-                Properties.Settings.Default.Reset();
+                LBConfiguration.Reset();
             }
             Init();
         }
@@ -85,14 +85,13 @@ namespace Gw2_Launchbuddy
         public void Init()
         {
 #if !DEBUG
-            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(UnhandledExceptionReport);
 
             //LB statistics
-            Properties.Settings.Default.counter_launches += 1;
-            Properties.Settings.Default.Save();
+            LBConfiguration.Config.counter_launches += 1;
+            LBConfiguration.Save();
 #else
             System.Diagnostics.Debug.WriteLine("Compiled without crash handler, and always first run.");
-            Properties.Settings.Default.counter_launches = 1;
+            LBConfiguration.Config.counter_launches = 1;
 #endif
 
 
@@ -107,7 +106,7 @@ namespace Gw2_Launchbuddy
             checkver.Start();*/
 
             LoadEnviromentUI();
-
+            TacoUISetup();
             cinema_setup();
 
             Mainwin_LoadSetup(); //do this after cinema setup!
@@ -116,12 +115,17 @@ namespace Gw2_Launchbuddy
             lv_accs.ItemsSource = AccountManager.Accounts;
             lv_accssettings.ItemsSource = AccountManager.Accounts;
             SettingsTabSetup();
-            if (Properties.Settings.Default.notifylbupdate)
+            if (LBConfiguration.Config.notifylbupdate)
             {
                 Thread checklbver = new Thread(checklbversion);
                 checklbver.Start();
             }
 
+        }
+
+        private void TacoUISetup()
+        {
+            tb_tacopath.Text = LBTacO.TacoPath;
         }
 
         private void LoadEnviromentUI()
@@ -133,33 +137,34 @@ namespace Gw2_Launchbuddy
         private void Mainwin_LoadSetup()
         {
 
-            this.Top = Properties.Settings.Default.mainwin_pos_y;
-            this.Left = Properties.Settings.Default.mainwin_pos_x;
+            this.Top = LBConfiguration.Config.mainwin_pos_y;
+            this.Left = LBConfiguration.Config.mainwin_pos_x;
 
-            if (Properties.Settings.Default.mainwin_size_x >= 100 && Properties.Settings.Default.mainwin_size_y >= 100)
+            if (LBConfiguration.Config.mainwin_size_x >= 100 && LBConfiguration.Config.mainwin_size_y >= 100)
             {
-                this.Height = Properties.Settings.Default.mainwin_size_y;
-                this.Width = Properties.Settings.Default.mainwin_size_x;
+                this.Height = LBConfiguration.Config.mainwin_size_y;
+                this.Width = LBConfiguration.Config.mainwin_size_x;
             }
         }
 
         private void Mainwin_SaveSetup()
         {
-            Properties.Settings.Default.mainwin_pos_x = this.Left;
-            Properties.Settings.Default.mainwin_pos_y = this.Top;
-            Properties.Settings.Default.mainwin_size_y = this.Height;
-            Properties.Settings.Default.mainwin_size_x = this.Width;
+            LBConfiguration.Config.mainwin_pos_x = this.Left;
+            LBConfiguration.Config.mainwin_pos_y = this.Top;
+            LBConfiguration.Config.mainwin_size_y = this.Height;
+            LBConfiguration.Config.mainwin_size_x = this.Width;
         }
 
         private void SettingsTabSetup()
         {
-            cb_lbupdatescheck.IsChecked = Properties.Settings.Default.notifylbupdate;
-            cb_useinstancegui.IsChecked = Properties.Settings.Default.useinstancegui;
+            cb_lbupdatescheck.IsChecked = LBConfiguration.Config.notifylbupdate;
+            cb_useinstancegui.IsChecked = LBConfiguration.Config.useinstancegui;
+            cb_autoupdatedatfiles.IsChecked = LBConfiguration.Config.autoupdatedatfiles;
         }
 
         private void DonatePopup()
         {
-            if ((Properties.Settings.Default.counter_launches % 100) == 5)
+            if ((LBConfiguration.Config.counter_launches % 100) == 5)
             {
                 Popup popup = new Popup();
                 popup.Show();
@@ -179,12 +184,6 @@ namespace Gw2_Launchbuddy
                 lv_lbversions.ItemsSource = VersionSwitcher.Releaselist;
                 bt_downloadrelease.Content = "Download";
             }));
-        }
-
-        private static void UnhandledExceptionReport(object sender, UnhandledExceptionEventArgs args)
-        {
-            Exception e = (Exception)args.ExceptionObject;
-            CrashReporter.ReportCrashToAll(e);
         }
 
         private void slideshow_diashow(string imagespath)
@@ -238,12 +237,12 @@ namespace Gw2_Launchbuddy
 
         private bool cinema_checksetup(bool checkslideshow, bool checkvideomode)
         {
-            string imagespath = Properties.Settings.Default.cinema_imagepath;
-            string musicpath = Properties.Settings.Default.cinema_musicpath;
-            string maskpath = Properties.Settings.Default.cinema_maskpath;
-            string videopath = Properties.Settings.Default.cinema_videopath;
-            string loginwindowpath = Properties.Settings.Default.cinema_loginwindowpath;
-            var backgroundcolor = Properties.Settings.Default.cinema_backgroundcolor;
+            string imagespath = LBConfiguration.Config.cinema_imagepath;
+            string musicpath = LBConfiguration.Config.cinema_musicpath;
+            string maskpath = LBConfiguration.Config.cinema_maskpath;
+            string videopath = LBConfiguration.Config.cinema_videopath;
+            string loginwindowpath = LBConfiguration.Config.cinema_loginwindowpath;
+            var backgroundcolor = LBConfiguration.Config.cinema_backgroundcolor;
 
             string[] musicext = {
                 ".WAV", ".MID", ".MIDI", ".WMA", ".MP3", ".OGG", ".RMA",
@@ -306,20 +305,20 @@ namespace Gw2_Launchbuddy
 
         private void cinema_setup()
         {
-            bool videomode = Properties.Settings.Default.cinema_video;
-            bool slideshowmode = Properties.Settings.Default.cinema_slideshow;
-            cinemamode = Properties.Settings.Default.cinema_use;
+            bool videomode = LBConfiguration.Config.cinema_video;
+            bool slideshowmode = LBConfiguration.Config.cinema_slideshow;
+            cinemamode = LBConfiguration.Config.cinema_use;
             if (cinemamode) cinemamode = cinema_checksetup(slideshowmode, videomode);
-            Properties.Settings.Default.cinema_use = cinemamode;
-            Properties.Settings.Default.Save();
+            LBConfiguration.Config.cinema_use = cinemamode;
+            LBConfiguration.Save();
             LoadCinemaSettings();
 
-            string musicpath = Properties.Settings.Default.cinema_musicpath;
-            string imagespath = Properties.Settings.Default.cinema_imagepath;
-            string maskpath = Properties.Settings.Default.cinema_maskpath;
-            string videopath = Properties.Settings.Default.cinema_videopath;
-            string loginwindowpath = Properties.Settings.Default.cinema_loginwindowpath;
-            var backgroundcolor = Properties.Settings.Default.cinema_backgroundcolor;
+            string musicpath = LBConfiguration.Config.cinema_musicpath;
+            string imagespath = LBConfiguration.Config.cinema_imagepath;
+            string maskpath = LBConfiguration.Config.cinema_maskpath;
+            string videopath = LBConfiguration.Config.cinema_videopath;
+            string loginwindowpath = LBConfiguration.Config.cinema_loginwindowpath;
+            var backgroundcolor = LBConfiguration.Config.cinema_backgroundcolor;
 
             //Settings UI Setup
             try
@@ -334,9 +333,9 @@ namespace Gw2_Launchbuddy
             if (!videomode && slideshowmode) rb_cinemaslideshowmode.IsChecked = true;
             ClrPcker_Background.SelectedColor = backgroundcolor;
             lab_loginwindowpath.Content = "Current Login Window: " + Path.GetFileNameWithoutExtension(loginwindowpath);
-            sl_logoendpos.Value = Properties.Settings.Default.cinema_slideshowendpos;
-            sl_logoendscaleX.Value = Properties.Settings.Default.cinema_slideshowendscale;
-            sl_volumecontrol.Value = Properties.Settings.Default.mediaplayer_volume;
+            sl_logoendpos.Value = LBConfiguration.Config.cinema_slideshowendpos;
+            sl_logoendscaleX.Value = LBConfiguration.Config.cinema_slideshowendscale;
+            sl_volumecontrol.Value = LBConfiguration.Config.mediaplayer_volume;
             Cinema_MediaPlayer.Volume = sl_volumecontrol.Value;
 
             if (cinemamode)
@@ -369,9 +368,9 @@ namespace Gw2_Launchbuddy
                 Canvas.SetLeft(Canvas_login, screenWidth / 10);
                 //Setting up End Position of Logo Animation
                 var endpos = (System.Windows.Media.Animation.EasingDoubleKeyFrame)Resources["Mask_EndPos"];
-                endpos.Value = Properties.Settings.Default.cinema_slideshowendpos * reso_x / 200;
+                endpos.Value = LBConfiguration.Config.cinema_slideshowendpos * reso_x / 200;
                 var endscale = (System.Windows.Media.Animation.EasingDoubleKeyFrame)Resources["Mask_EndScaleX"];
-                endscale.Value = (double)Properties.Settings.Default.cinema_slideshowendscale;
+                endscale.Value = (double)LBConfiguration.Config.cinema_slideshowendscale;
 
                 //General UI Hiding/Scaling
                 SettingsGrid.Visibility = Visibility.Hidden;
@@ -399,14 +398,14 @@ namespace Gw2_Launchbuddy
                         img_slideshow.Visibility = Visibility.Hidden;
                         //Load background video
                         Cinema_MediaPlayer.Visibility = Visibility.Visible;
-                        Cinema_MediaPlayer.Source = new Uri(Properties.Settings.Default.cinema_videopath, UriKind.Relative);
+                        Cinema_MediaPlayer.Source = new Uri(LBConfiguration.Config.cinema_videopath, UriKind.Relative);
                         Cinema_MediaPlayer.Play();
                     }
                     catch (Exception err)
                     {
                         MessageBox.Show("The chosen video for cinema mode is not valid or does not exist!\n" + err.Message);
-                        Properties.Settings.Default.cinema_use = false;
-                        Properties.Settings.Default.Save();
+                        LBConfiguration.Config.cinema_use = false;
+                        LBConfiguration.Save();
                     }
                 }
 
@@ -441,8 +440,8 @@ namespace Gw2_Launchbuddy
                     catch (Exception err)
                     {
                         MessageBox.Show("One or more settings for slide show mode are missing!\n" + err.Message);
-                        Properties.Settings.Default.cinema_use = false;
-                        Properties.Settings.Default.Save();
+                        LBConfiguration.Config.cinema_use = false;
+                        LBConfiguration.Save();
                     }
                 }
             }
@@ -628,7 +627,7 @@ namespace Gw2_Launchbuddy
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            Properties.Settings.Default.Save();
+            LBConfiguration.Save();
             Environment.Exit(Environment.ExitCode);
         }
 
@@ -675,6 +674,7 @@ namespace Gw2_Launchbuddy
             sview.SortDescriptions.Add(new SortDescription("Ping", ListSortDirection.Ascending));
         }
 
+        /*
         private void bt_donate_Click(object sender, RoutedEventArgs e)
         {
             string url = "";
@@ -698,11 +698,12 @@ namespace Gw2_Launchbuddy
         {
             System.Diagnostics.Process.Start(@"www.patreon.com/gw2launchbuddy");
         }
+        */
 
         private void bt_close_Click(object sender, RoutedEventArgs e)
         {
             Mainwin_SaveSetup();
-            Properties.Settings.Default.Save();
+            LBConfiguration.Save();
             EnviromentManager.Close();
             Application.Current.Shutdown();
         }
@@ -727,8 +728,8 @@ namespace Gw2_Launchbuddy
                 {
                     images.Add(new CinemaImage(file));
                     lv_cinema_images.ItemsSource = images;
-                    Properties.Settings.Default.cinema_imagepath = folderdialog.SelectedPath;
-                    Properties.Settings.Default.Save();
+                    LBConfiguration.Config.cinema_imagepath = folderdialog.SelectedPath;
+                    LBConfiguration.Save();
                 }
             }
         }
@@ -752,8 +753,8 @@ namespace Gw2_Launchbuddy
                 {
                     if (fileDialog.FileName != "")
                     {
-                        Properties.Settings.Default.cinema_maskpath = fileDialog.FileName;
-                        Properties.Settings.Default.Save();
+                        LBConfiguration.Config.cinema_maskpath = fileDialog.FileName;
+                        LBConfiguration.Save();
                         lab_maskpreview.Content = "Current Mask: " + Path.GetFileName(fileDialog.FileName);
                         img_maskpreview.Source = LoadImage(fileDialog.FileName);
                         ImageBrush newmask = new ImageBrush(LoadImage(fileDialog.FileName));
@@ -770,8 +771,8 @@ namespace Gw2_Launchbuddy
                 {
                     if (fileDialog.FileName != "")
                     {
-                        Properties.Settings.Default.cinema_musicpath = fileDialog.FileName;
-                        Properties.Settings.Default.Save();
+                        LBConfiguration.Config.cinema_musicpath = fileDialog.FileName;
+                        LBConfiguration.Save();
                         lab_musicpath.Content = "Current Music File: " + Path.GetFileName(fileDialog.FileName);
                         Cinema_MediaPlayer.Source = (new Uri(fileDialog.FileName));
                     }
@@ -793,10 +794,10 @@ namespace Gw2_Launchbuddy
 
         private void LoadCinemaSettings()
         {
-            string imagepath = Properties.Settings.Default.cinema_imagepath;
-            string maskpath = Properties.Settings.Default.cinema_maskpath;
-            string musicpath = Properties.Settings.Default.cinema_musicpath;
-            string loginpath = Properties.Settings.Default.cinema_loginwindowpath;
+            string imagepath = LBConfiguration.Config.cinema_imagepath;
+            string maskpath = LBConfiguration.Config.cinema_maskpath;
+            string musicpath = LBConfiguration.Config.cinema_musicpath;
+            string loginpath = LBConfiguration.Config.cinema_loginwindowpath;
 
             try
             {
@@ -854,9 +855,9 @@ namespace Gw2_Launchbuddy
 
         private void bt_musicstart_Click(object sender, RoutedEventArgs e)
         {
-            if (Properties.Settings.Default.cinema_musicpath != null && Properties.Settings.Default.cinema_musicpath != "")
+            if (LBConfiguration.Config.cinema_musicpath != null && LBConfiguration.Config.cinema_musicpath != "")
             {
-                Cinema_MediaPlayer.Source = new Uri(Properties.Settings.Default.cinema_musicpath);
+                Cinema_MediaPlayer.Source = new Uri(LBConfiguration.Config.cinema_musicpath);
                 Cinema_MediaPlayer.Play();
             }
             else
@@ -872,9 +873,9 @@ namespace Gw2_Launchbuddy
 
         private void bt_cinema_Click(object sender, RoutedEventArgs e)
         {
-            cinemamode = !Properties.Settings.Default.cinema_use;
-            Properties.Settings.Default.cinema_use = cinemamode;
-            Properties.Settings.Default.Save();
+            cinemamode = !LBConfiguration.Config.cinema_use;
+            LBConfiguration.Config.cinema_use = cinemamode;
+            LBConfiguration.Save();
             Cinema_MediaPlayer.Stop();
             cinema_setup();
         }
@@ -897,9 +898,9 @@ namespace Gw2_Launchbuddy
             {
                 Videomode.Visibility = Visibility.Collapsed;
                 Slideshow.Visibility = Visibility.Visible;
-                Properties.Settings.Default.cinema_video = false;
-                Properties.Settings.Default.cinema_slideshow = true;
-                Properties.Settings.Default.Save();
+                LBConfiguration.Config.cinema_video = false;
+                LBConfiguration.Config.cinema_slideshow = true;
+                LBConfiguration.Save();
             }
             catch { }
         }
@@ -910,9 +911,9 @@ namespace Gw2_Launchbuddy
             {
                 Slideshow.Visibility = Visibility.Collapsed;
                 Videomode.Visibility = Visibility.Visible;
-                Properties.Settings.Default.cinema_video = true;
-                Properties.Settings.Default.cinema_slideshow = false;
-                Properties.Settings.Default.Save();
+                LBConfiguration.Config.cinema_video = true;
+                LBConfiguration.Config.cinema_slideshow = false;
+                LBConfiguration.Save();
             }
             catch { }
         }
@@ -928,7 +929,7 @@ namespace Gw2_Launchbuddy
                     if (fileDialog.Result == System.Windows.Forms.DialogResult.OK)
                     {
                         cinema_videoplayback.Source = new Uri(fileDialog.FileName, UriKind.Relative);
-                        Properties.Settings.Default.cinema_videopath = fileDialog.FileName;
+                        LBConfiguration.Config.cinema_videopath = fileDialog.FileName;
                         SetVideoInfo();
                         cinema_videoplayback.Play();
                     }
@@ -939,7 +940,7 @@ namespace Gw2_Launchbuddy
         {
             try
             {
-                string videopath = Properties.Settings.Default.cinema_videopath;
+                string videopath = LBConfiguration.Config.cinema_videopath;
 
                 lab_videoname.Content = "Name: " + Path.GetFileNameWithoutExtension(videopath);
                 lab_videopath.Content = "Path: " + Path.GetFullPath(videopath);
@@ -1051,8 +1052,8 @@ namespace Gw2_Launchbuddy
         private void WrapPanel_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
         {
             sl_volumecontrol.Visibility = Visibility.Collapsed;
-            Properties.Settings.Default.mediaplayer_volume = sl_volumecontrol.Value;
-            Properties.Settings.Default.Save();
+            LBConfiguration.Config.mediaplayer_volume = sl_volumecontrol.Value;
+            LBConfiguration.Save();
         }
 
         private void Cinema_MediaPlayer_MediaEnded(object sender, RoutedEventArgs e)
@@ -1066,8 +1067,8 @@ namespace Gw2_Launchbuddy
             myWindow.Background = new SolidColorBrush((Color)ClrPcker_Background.SelectedColor);
             if ((Color)ClrPcker_Background.SelectedColor != null)
             {
-                Properties.Settings.Default.cinema_backgroundcolor = (Color)ClrPcker_Background.SelectedColor;
-                Properties.Settings.Default.Save();
+                LBConfiguration.Config.cinema_backgroundcolor = (Color)ClrPcker_Background.SelectedColor;
+                LBConfiguration.Save();
             }
         }
 
@@ -1080,10 +1081,10 @@ namespace Gw2_Launchbuddy
                     if (fileDialog.Result == System.Windows.Forms.DialogResult.OK)
                     {
                         cinema_videoplayback.Source = new Uri(fileDialog.FileName, UriKind.Relative);
-                        Properties.Settings.Default.cinema_loginwindowpath = fileDialog.FileName;
+                        LBConfiguration.Config.cinema_loginwindowpath = fileDialog.FileName;
                         img_loginwindow.Source = LoadImage(fileDialog.FileName);
                         lab_loginwindowpath.Content = "Current Login Window: " + Path.GetFileNameWithoutExtension(fileDialog.FileName);
-                        Properties.Settings.Default.Save();
+                        LBConfiguration.Save();
                     }
                 });
         }
@@ -1098,8 +1099,8 @@ namespace Gw2_Launchbuddy
         {
             var anim_slideshow = (System.Windows.Media.Animation.Storyboard)Resources["anim_slideshow_start"];
             anim_slideshow.Begin();
-            Properties.Settings.Default.cinema_slideshowendpos = (int)sl_logoendpos.Value;
-            Properties.Settings.Default.Save();
+            LBConfiguration.Config.cinema_slideshowendpos = (int)sl_logoendpos.Value;
+            LBConfiguration.Save();
         }
 
         private void sl_logoendscaleX_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -1113,8 +1114,8 @@ namespace Gw2_Launchbuddy
         {
             var anim_slideshow = (System.Windows.Media.Animation.Storyboard)Resources["anim_slideshow_start"];
             anim_slideshow.Begin();
-            Properties.Settings.Default.cinema_slideshowendscale = sl_logoendscaleX.Value;
-            Properties.Settings.Default.Save();
+            LBConfiguration.Config.cinema_slideshowendscale = sl_logoendscaleX.Value;
+            LBConfiguration.Save();
         }
 
         private void bt_loadgfx_Click(object sender, RoutedEventArgs e)
@@ -1211,14 +1212,20 @@ namespace Gw2_Launchbuddy
 
         private void cb_lbupdatescheck_Click(object sender, RoutedEventArgs e)
         {
-            Properties.Settings.Default.notifylbupdate = (bool)cb_lbupdatescheck.IsChecked;
-            Properties.Settings.Default.Save();
+            LBConfiguration.Config.notifylbupdate = (bool)cb_lbupdatescheck.IsChecked;
+            LBConfiguration.Save();
         }
 
         private void cb_useinstancegui_Click(object sender, RoutedEventArgs e)
         {
-            Properties.Settings.Default.useinstancegui = (bool)cb_useinstancegui.IsChecked;
-            Properties.Settings.Default.Save();
+            LBConfiguration.Config.useinstancegui = (bool)cb_useinstancegui.IsChecked;
+            LBConfiguration.Save();
+        }
+
+        private void cb_autoupdatedatfiles_Click(object sender, RoutedEventArgs e)
+        {
+            LBConfiguration.Config.autoupdatedatfiles = (bool)cb_autoupdatedatfiles.IsChecked;
+            LBConfiguration.Save();
         }
 
         private void bt_manualauthserver_Click(object sender, RoutedEventArgs e)
@@ -1544,7 +1551,12 @@ namespace Gw2_Launchbuddy
 
         private void cb_useinstancegui_Checked(object sender, RoutedEventArgs e)
         {
-            Properties.Settings.Default.useinstancegui = (bool)(sender as CheckBox).IsChecked;
+            LBConfiguration.Config.useinstancegui = (bool)(sender as CheckBox).IsChecked;
+        }
+
+        private void cb_autoupdatedatfiles_Checked(object sender, RoutedEventArgs e)
+        {
+            LBConfiguration.Config.autoupdatedatfiles = (bool)(sender as CheckBox).IsChecked;
         }
 
 
@@ -1624,13 +1636,23 @@ namespace Gw2_Launchbuddy
 
         }
 
+        private void bt_patreon_Click(object sender, MouseButtonEventArgs e)
+        {
+            System.Diagnostics.Process.Start("www.patreon.com/gw2launchbuddy");
+        }
+
+        private void bt_donate_Click(object sender, MouseButtonEventArgs e)
+        {
+            System.Diagnostics.Process.Start("https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=WKHYFSBMK6TQE&source=url");
+        }
+
         #region Plugins
 
-        public void AddTabPlugin(PluginContracts.ILBPlugin plugin)
+        public void AddTabPlugin(TabItem UIContent)
         {
-            if(plugin.UIContent !=null)
+            if(UIContent !=null)
             {
-                tab_options.Items.Add(plugin.UIContent);
+                tab_options.Items.Add(UIContent);
             }
         }
 
@@ -1639,6 +1661,14 @@ namespace Gw2_Launchbuddy
             if (plugin.UIContent != null)
             {
                 tab_options.Items.Remove(plugin.UIContent);
+            }
+        }
+
+        public void AddHomePlugin(StackPanel UIContent)
+        {
+            if (UIContent != null)
+            {
+                
             }
         }
 
@@ -1659,7 +1689,32 @@ namespace Gw2_Launchbuddy
 
         private void cb_autoupdateplugins_Click(object sender, RoutedEventArgs e)
         {
-            Properties.Settings.Default.Save();
+            LBConfiguration.Save();
+        }
+
+        private void Bt_resetpropertysettings_Click(object sender, RoutedEventArgs e)
+        {
+            EnviromentManager.ResetPropertySettings();
+        }
+
+        private void Bt_resetinstanceguisettings_Click(object sender, RoutedEventArgs e)
+        {
+            if(EnviromentManager.LBInstanceGUI !=null)
+            {
+                EnviromentManager.LBInstanceGUI.ResetWindowSettings();
+            }
+        }
+
+        private void bt_settacopath_Click(object sender, RoutedEventArgs e)
+        {
+            LBTacO.SetPath();
+            tb_tacopath.Text = LBTacO.TacoPath;
+        }
+
+        private void bt_launchtaco_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var acc = (sender as Image).DataContext as Account;
+            LBTacO.LaunchTacoInstance(acc);
         }
 
         private void bt_updateplugin_Click(object sender, RoutedEventArgs e)

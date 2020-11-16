@@ -63,7 +63,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
 
         public static void LaunchAccounts()
         {
-            UpdateAccountFiles();
+            UpdateAccountFilesSelectedOnly();
             foreach (Account acc in SelectedAccounts)
             {
                 acc.Client.Launch();
@@ -83,6 +83,14 @@ namespace Gw2_Launchbuddy.ObjectManagers
             foreach(Account acc in Accounts.Where<Account>(x=>x.Settings.Loginfile!=null))
             {
                 if(!acc.Settings.Loginfile.IsUpToDate)LocalDatManager.UpdateLocalDat(acc.Settings.Loginfile);
+            }
+        }
+
+        public static void UpdateAccountFilesSelectedOnly()
+        {
+            foreach (Account acc in SelectedAccounts.Where<Account>(x => x.Settings.Loginfile != null))
+            {
+                if (!acc.Settings.Loginfile.IsUpToDate) LocalDatManager.UpdateLocalDat(acc.Settings.Loginfile);
             }
         }
 
@@ -242,6 +250,7 @@ namespace Gw2_Launchbuddy.ObjectManagers
         [XmlIgnore]
         private WindowConfig winconfig;
 
+
         public event PropertyChangedEventHandler PropertyChanged;
         public Arguments Arguments { get; set; }
         public GFXConfig GFXFile { get; set; }
@@ -382,6 +391,8 @@ namespace Gw2_Launchbuddy.ObjectManagers
         public bool HasWindowConfig { get { return WinConfig != null; } }
         [XmlIgnore]
         public bool LoginfileOutdated {get { if(Loginfile != null)return Loginfile.IsOutdated; return false;}}
+        [XmlIgnore]
+        public bool TacoValid { get { return LBTacO.IsValid; } }
 
 
         public void SetLoginFile()
@@ -430,9 +441,9 @@ namespace Gw2_Launchbuddy.ObjectManagers
 
     public class AccountInformation
     {
-        public DateTime LastLogin { get; private set; }
-        public DateTime LastClose { get; private set; }
-        public TimeSpan Playtime { get; private set; }
+        public DateTime LastLogin { get; set; }
+        public DateTime LastClose { get; set; }
+        public TimeSpan Playtime { get; set; }
 
         public AccountInformation()
         {
